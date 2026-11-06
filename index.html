@@ -4090,7 +4090,7 @@ label.srow{justify-content:flex-start;cursor:pointer}
     function impulse(sec){var n=Math.floor(ac.sampleRate*sec),b=ac.createBuffer(2,n,ac.sampleRate);for(var c=0;c<2;c++){var d=b.getChannelData(c);for(var i=0;i<n;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/n,2.6)}return b}
     function N(m){return 440*Math.pow(2,(m-69)/12)}
     /* --- background music: Seacat's own tracks (audio files) --- */
-    var TR=["bgm/over-the-horizon.m4a","bgm/beautiful-day.m4a"],au=null,ti=-1;
+    var TR=["bgm/over-the-horizon.mp3","bgm/beautiful-day.mp3"],au=null,ti=-1;
     function mvol(){return Math.max(0,Math.min(1,0.6*volPref("music")))}
     function aud(){if(!au){au=new Audio();au.preload="none";au.addEventListener("ended",function(){track((ti+1)%TR.length,true)})}return au}
     function track(i,force){var a=aud();if(i!==ti||force){ti=i;a.src=TR[i];a.currentTime=0}a.volume=mvol();if(playing&&on("music")){var pr=a.play();if(pr&&pr.catch)pr.catch(function(){})}else a.pause()}
