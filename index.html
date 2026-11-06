@@ -580,6 +580,18 @@ body.wide-room #yard{max-width:960px}
 .ckeys .var{font-style:italic}
 .cstat{font-family:var(--font-mono);font-size:11px;color:var(--muted);align-self:flex-start}
 .units{gap:10px}
+.wallet{margin:-8px 0 0;font-family:var(--font-mono);font-size:13px;color:var(--muted)}
+.set-sheet{gap:12px;max-width:520px}
+.set-sheet h2{margin:8px 0 0}
+.srow{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:15px}
+.srow label{display:flex;align-items:center;gap:8px;cursor:pointer}
+.srow input[type=checkbox]{width:20px;height:20px;accent-color:var(--accent)}
+.srow input[type=range]{flex:1 1 140px;max-width:240px;accent-color:var(--accent)}
+.accs{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:6px}
+.acc{display:flex;flex-direction:column;align-items:center;gap:4px;border:1.5px solid var(--line);background:var(--surface);border-radius:12px;padding:8px 4px;font-size:12px;color:var(--fg)}
+.acc i{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--c1) 50%,var(--c2) 50%)}
+.acc[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 2px var(--accent)}
+label.srow{justify-content:flex-start;cursor:pointer}
 </style></head><body><div class="wrap">
 
   <!-- SPLASH -->
@@ -602,11 +614,13 @@ body.wide-room #yard{max-width:960px}
       </div>
       <div class="syncwrap">
         <button type="button" class="ghost sm" id="to-splash" aria-label="오늘의 한마디 다시 보기">💬 한마디</button>
+        <button type="button" class="ghost sm" id="go-set" aria-label="설정">⚙ 설정</button>
         <span class="sync" id="sync" data-s="local"><i></i><span id="sync-text">이 기기에만 저장</span></span>
         <button type="button" class="ghost sm" id="sync-now" hidden="">☁ 지금 저장</button>
       </div>
     </header>
 
+    <p class="wallet" id="home-coins"></p>
     <div class="resume-bar" id="resume-bar" hidden="">
       <div><b>풀던 문제가 있어요</b><span id="rb-desc"></span></div>
       <button type="button" id="rb-go">이어서 풀기</button>
@@ -1270,6 +1284,22 @@ body.wide-room #yard{max-width:960px}
       <button type="button" class="ghost warn" id="fs-del" hidden="" style="flex:1">폴더 삭제</button>
     </div>
     <p class="msg" id="fs-msg" role="status"></p>
+  </div>
+</div><div class="modal" id="set-pop" hidden="" role="dialog" aria-modal="true" aria-labelledby="set-title">
+  <div class="sheet set-sheet">
+    <div class="phead"><h3 id="set-title">⚙ 설정</h3><button type="button" class="ghost sm" id="set-close">닫기</button></div>
+    <h2>소리</h2>
+    <label class="srow"><input type="checkbox" id="set-mute"><span>모든 소리 끄기</span></label>
+    <div class="srow"><label><input type="checkbox" id="set-music"> 🎻 배경음악</label><input type="range" id="set-v-music" min="0" max="100" aria-label="배경음악 크기"></div>
+    <div class="srow"><label><input type="checkbox" id="set-nature"> 🍃 자연소리</label><input type="range" id="set-v-nature" min="0" max="100" aria-label="자연소리 크기"></div>
+    <div class="srow"><label><input type="checkbox" id="set-fx"> 🔔 효과음</label><input type="range" id="set-v-fx" min="0" max="100" aria-label="효과음 크기"></div>
+    <p class="help">배경음악·자연소리는 화면을 처음 누르면 작게 시작해요 (브라우저 규칙).</p>
+    <h2>화면</h2>
+    <div class="srow"><span>🔆 밝기 <b id="set-bright-v"></b></span><input type="range" id="set-bright" min="60" max="115" step="5" aria-label="밝기"></div>
+    <div class="srow"><span>테마</span><div class="seg" id="set-theme"><button type="button" data-v="auto">자동</button><button type="button" data-v="light">밝게</button><button type="button" data-v="dark">어둡게</button></div></div>
+    <div class="srow"><span>글자 크기</span><div class="seg" id="set-size"><button type="button" data-v="s">작게</button><button type="button" data-v="m">보통</button><button type="button" data-v="l">크게</button><button type="button" data-v="xl">아주 크게</button></div></div>
+    <div><span class="help">포인트 색</span><div class="accs" id="set-accent"></div></div>
+    <button type="button" class="ghost warn" id="set-reset">기본값으로 되돌리기</button>
   </div>
 </div><div class="modal" id="kc-pop" hidden="" role="dialog" aria-modal="true" aria-labelledby="kc-title">
   <div class="sheet kc-sheet">
@@ -2007,6 +2037,7 @@ body.wide-room #yard{max-width:960px}
     if(F.subs.length&&F.subs.indexOf(S.prefs.subject)<0)S.prefs.subject=F.subs[0];
     renderFolders();
     if(typeof renderPetbar==="function"){petCheck();renderPetbar()}
+    if(typeof attendance==="function"&&$("#splash").hidden){try{attendance();renderWallet()}catch(e){}}
     $("#f-name").textContent=F.name;$("#f-crumb").textContent="홈 › "+F.name;
     setCover($("#f-pet"),F,5);setPet($("#f-empty-pet"),F.pet,8);
     $("#f-empty").hidden=!!F.subs.length;$("#f-body").hidden=!F.subs.length;
@@ -4047,9 +4078,9 @@ body.wide-room #yard{max-width:960px}
         try{
           ac=new A();out=ac.createDynamicsCompressor();out.connect(ac.destination);
           verb=ac.createConvolver();verb.buffer=impulse(2.8);var vg=ac.createGain();vg.gain.value=0.55;verb.connect(vg);vg.connect(out);
-          musicBus=ac.createGain();musicBus.gain.value=0.5;musicBus.connect(out);musicBus.connect(verb);
-          natBus=ac.createGain();natBus.gain.value=0.35;natBus.connect(out);
-          fxBus=ac.createGain();fxBus.gain.value=0.55;fxBus.connect(out);
+          musicBus=ac.createGain();musicBus.gain.value=0.0001;musicBus.connect(out);musicBus.connect(verb);
+          natBus=ac.createGain();natBus.gain.value=0.35*volPref("nature");natBus.connect(out);
+          fxBus=ac.createGain();fxBus.gain.value=0.75*volPref("fx");fxBus.connect(out);
         }catch(e){ac=null;return null}
       }
       if(ac.state==="suspended"){try{ac.resume()}catch(e){}}
@@ -4125,11 +4156,14 @@ body.wide-room #yard{max-width:960px}
       if(typeof sg==="number")song=sg;
       if(!play){playing=false;if(timer){clearInterval(timer);timer=null}natStop();if(musicBus&&ac)musicBus.gain.setTargetAtTime(0.0001,ac.currentTime,0.3);return}
       playing=true;if(!ctx())return;
-      musicBus.gain.cancelScheduledValues(ac.currentTime);musicBus.gain.setTargetAtTime(on("music")?0.5:0.0001,ac.currentTime,0.4);
+      musicBus.gain.cancelScheduledValues(ac.currentTime);musicBus.gain.setTargetAtTime(on("music")?0.9*volPref("music"):0.0001,ac.currentTime,0.4);
       nextT=ac.currentTime+0.15;beat=0;natStart(song);
       if(!timer)timer=setInterval(tick,120);
     }
     function refresh(){if(playing)bgm(true)}
+    function volumes(){if(!ac)return;var t=ac.currentTime;musicBus.gain.setTargetAtTime(on("music")?0.9*volPref("music"):0.0001,t,0.1);natBus.gain.setTargetAtTime(0.35*volPref("nature"),t,0.1);fxBus.gain.setTargetAtTime(0.75*volPref("fx"),t,0.05)}
+    function home(){if(playing&&song===1&&timer)return;bgm(true,1)}
+    function pause(hid){if(!ac)return;try{if(hid)ac.suspend();else if(playing)ac.resume()}catch(e){}}
     /* --- effects --- */
     function blip(f,t,d,type,vol,f2){var o=ac.createOscillator(),g=ac.createGain();o.type=type||"square";o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(0.0008,t+d);o.connect(g);g.connect(fxBus);o.start(t);o.stop(t+d+0.03)}
     function seq(ms,type,vol,gap){var t=ac.currentTime+0.01;ms.forEach(function(m){if(m)blip(N(m),t,gap*0.95,type,vol);t+=gap})}
@@ -4149,7 +4183,7 @@ body.wide-room #yard{max-width:960px}
     };
     function fx(n){if(!on("fx")||!FX[n])return;if(!ctx())return;try{FX[n]()}catch(e){}}
     function toggle(k){if(k==="mute")S.prefs.mute=!S.prefs.mute;else S.prefs["snd_"+k]=!pref(k,true);saveLocal();ctx();refresh()}
-    return {fx:fx,bgm:bgm,toggle:toggle,on:on,pref:pref,unlock:ctx,label:function(){return S.prefs.mute?"🔇 꺼짐":"🔊 소리"}};
+    return {fx:fx,bgm:bgm,toggle:toggle,on:on,pref:pref,unlock:ctx,refresh:refresh,volumes:volumes,home:home,pause:pause,label:function(){return S.prefs.mute?"🔇 꺼짐":"🔊 소리"}};
   })();
   function sndUI(){
     var m=$("#g-snd");if(m)m.textContent=SND.label();
@@ -4739,7 +4773,7 @@ body.wide-room #yard{max-width:960px}
       padTo("game");setGPad(!!S.prefs.gpad);sndUI();SND.bgm(true,gs().stage);renderGCard();
       if(!S.prefs.gameIntro3){S.prefs.gameIntro3=1;saveLocal();readSign()}
     }
-    function stop(){var was=st.on;st.on=false;st.run=false;st.jx=st.jy=0;st.keys={};st.fish=null;cancelAnimationFrame(st.raf);SND.bgm(false);if(was||gPadMounted)padTo("study")}
+    function stop(){var was=st.on;st.on=false;st.run=false;st.jx=st.jy=0;st.keys={};st.fish=null;cancelAnimationFrame(st.raf);if(was)SND.home();if(was||gPadMounted)padTo("study")}
     /* ----- controls: analog joystick + A/B/C ----- */
     var joy=$("#g-joy"),knob=joy.querySelector(".joy-knob"),jid=null;
     function joySet(e){
@@ -4937,6 +4971,65 @@ body.wide-room #yard{max-width:960px}
   $("#go-yard").onclick=openYard;
   $("#y-back").onclick=function(){renderHome();show("home")};
   $("#y-game").onclick=function(){GAME.start(curFolder().id)};
+  /* ================= settings: sound volumes, brightness, theme, accent, text size ================= */
+  var ACCENTS=[["브라운","#9b6440","#d9a172"],["세이지","#5f7f44","#a3c184"],["바다","#3f6fa8","#8fb6e6"],["벚꽃","#b8486f","#ec9ab6"],["라벤더","#7a55b0","#bba0e6"],["노을","#c4661f","#f0a464"],["민트","#2f8f86","#7fd1c8"],["먹","#3d3a36","#d8cdbf"]];
+  function lookPrefs(){var L=S.prefs.look;if(!L||typeof L!=="object")L=S.prefs.look={};if(typeof L.bright!=="number")L.bright=100;if(!L.theme)L.theme="auto";if(typeof L.accent!=="number")L.accent=0;if(!L.size)L.size="m";return L}
+  function applyLook(){
+    var L=lookPrefs(),A=ACCENTS[L.accent]||ACCENTS[0],root=document.documentElement;
+    if(L.theme==="auto")root.removeAttribute("data-theme");else root.setAttribute("data-theme",L.theme);
+    var st=document.getElementById("user-look");if(!st){st=document.createElement("style");st.id="user-look";document.head.appendChild(st)}
+    st.textContent=":root{--accent:"+A[1]+";--on-accent:#fffaf3}"+
+      "@media (prefers-color-scheme: dark){:root:not([data-theme=\"light\"]){--accent:"+A[2]+";--on-accent:#1c1814}}"+
+      ":root[data-theme=\"dark\"]{--accent:"+A[2]+";--on-accent:#1c1814}"+
+      (L.bright!==100?"html{filter:brightness("+(L.bright/100)+")}":"")+
+      (L.size!=="m"?".wrap{zoom:"+(L.size==="s"?0.92:L.size==="l"?1.12:1.22)+"}":"");
+    var mc=document.querySelector('meta[name="theme-color"]');if(mc)mc.setAttribute("content",A[1]);
+  }
+  function volPref(k){var v=S.prefs["vol_"+k];return typeof v==="number"?v:(k==="music"?0.35:k==="nature"?0.45:0.7)}
+  function renderSettings(){
+    var L=lookPrefs();
+    [["music","배경음악 (피아노·첼로·바이올린)"],["nature","자연소리 (새·바람·물)"],["fx","효과음"]].forEach(function(p){
+      $("#set-"+p[0]).checked=SND.pref(p[0],true);$("#set-v-"+p[0]).value=Math.round(volPref(p[0])*100);
+    });
+    $("#set-mute").checked=!!S.prefs.mute;
+    $("#set-bright").value=L.bright;$("#set-bright-v").textContent=L.bright+"%";
+    Array.prototype.forEach.call(document.querySelectorAll("#set-theme button"),function(b){b.setAttribute("aria-pressed",b.getAttribute("data-v")===L.theme)});
+    Array.prototype.forEach.call(document.querySelectorAll("#set-size button"),function(b){b.setAttribute("aria-pressed",b.getAttribute("data-v")===L.size)});
+    var sw=$("#set-accent");sw.textContent="";
+    ACCENTS.forEach(function(A,i){var b=h("button",{type:"button",class:"acc","aria-label":A[0]+" 색","aria-pressed":String(i===L.accent),style:"--c1:"+A[1]+";--c2:"+A[2]},h("i"),h("span",null,A[0]));b.onclick=function(){L.accent=i;saveLocal();applyLook();renderSettings()};sw.appendChild(b)});
+  }
+  ["music","nature","fx"].forEach(function(k){
+    $("#set-"+k).onchange=function(){S.prefs["snd_"+k]=this.checked;if(this.checked)S.prefs.mute=false;saveLocal();SND.refresh();renderSettings();if(k==="fx"&&this.checked)SND.fx("coin")};
+    $("#set-v-"+k).oninput=function(){S.prefs["vol_"+k]=(+this.value)/100;saveLocal();SND.volumes();if(k==="fx")SND.fx("coin")};
+  });
+  $("#set-mute").onchange=function(){S.prefs.mute=this.checked;saveLocal();SND.refresh();if(typeof sndUI==="function")sndUI()};
+  $("#set-bright").oninput=function(){lookPrefs().bright=+this.value;$("#set-bright-v").textContent=this.value+"%";saveLocal();applyLook()};
+  Array.prototype.forEach.call(document.querySelectorAll("#set-theme button"),function(b){b.onclick=function(){lookPrefs().theme=b.getAttribute("data-v");saveLocal();applyLook();renderSettings()}});
+  Array.prototype.forEach.call(document.querySelectorAll("#set-size button"),function(b){b.onclick=function(){lookPrefs().size=b.getAttribute("data-v");saveLocal();applyLook();renderSettings()}});
+  $("#set-reset").onclick=function(){S.prefs.look={};["music","nature","fx"].forEach(function(k){delete S.prefs["vol_"+k];delete S.prefs["snd_"+k]});S.prefs.mute=false;saveLocal();applyLook();SND.refresh();SND.volumes();renderSettings();toast("기본 설정으로 돌렸어요")};
+  $("#go-set").onclick=function(){renderSettings();$("#set-pop").hidden=false;SND.unlock();SND.home()};
+  $("#set-close").onclick=function(){$("#set-pop").hidden=true;if(!$("#home").hidden)renderHome()};
+  $("#set-pop").addEventListener("click",function(e){if(e.target===this){this.hidden=true}});
+  applyLook();
+  /* app-wide quiet background: starts on the first touch (browsers block sound before that) */
+  (function(){
+    var started=false;
+    function kick(){if(started)return;started=true;SND.unlock();if($("#game").hidden)SND.home()}
+    document.addEventListener("pointerdown",kick,{capture:true,passive:true});
+    document.addEventListener("keydown",kick,{capture:true});
+    document.addEventListener("visibilitychange",function(){SND.pause(document.hidden)});
+  })();
+  /* ================= daily attendance: +50 coins once a day ================= */
+  function attendance(){
+    var G=gx(),t=today();if(!G.att)G.att={day:"",streak:0,total:0};
+    if(G.att.day===t)return;
+    var y=new Date();y.setDate(y.getDate()-1);var ys=y.getFullYear()+"-"+(y.getMonth()+1)+"-"+y.getDate();
+    G.att.streak=G.att.day===ys?G.att.streak+1:1;G.att.day=t;G.att.total=(G.att.total||0)+1;
+    var bonus=G.att.streak%7===0?100:0;G.coins+=50+bonus;savePet();
+    setTimeout(function(){SND.fx("clear");toast("📅 출석 "+G.att.streak+"일째! 💰 +50"+(bonus?" · 7일 연속 보너스 💰 +"+bonus:""))},700);
+  }
+  function renderWallet(){var G=gx(),a=G.att||{};var el=$("#home-coins");if(el)el.textContent="💰 "+G.coins+" · 🪵 "+G.wood+(a.streak?" · 📅 "+a.streak+"일 연속":"")}
+
   $("#go-game").onclick=function(){GAME.start(curFolder().id)};
   $("#r-game").onclick=function(){stopWander();GAME.start(selPet||curFolder().id)};
 
