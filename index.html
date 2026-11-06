@@ -616,7 +616,7 @@ label.srow{justify-content:flex-start;cursor:pointer}
         <button type="button" class="ghost sm" id="to-splash" aria-label="오늘의 한마디 다시 보기">💬 한마디</button>
         <button type="button" class="ghost sm" id="go-set" aria-label="설정">⚙ 설정</button>
         <span class="sync" id="sync" data-s="local"><i></i><span id="sync-text">이 기기에만 저장</span></span>
-        <button type="button" class="ghost sm" id="sync-now" hidden="">☁ 지금 저장</button>
+        <button type="button" class="ghost sm" id="sync-now" aria-label="지금 동기화" style="font-weight:700">🔄 동기화</button>
       </div>
     </header>
 
@@ -1890,14 +1890,22 @@ label.srow{justify-content:flex-start;cursor:pointer}
   }
   function updateSyncBtn(){
     var b=$("#sync-now"),st=$("#sync").getAttribute("data-s"),n=Object.keys(R.pending).length;
-    b.hidden=OFFLINE||R.noWrite||!n||st==="saving"||st==="synced"||st==="connecting";
-    b.textContent="☁ 지금 저장 ("+n+")";
+    b.hidden=OFFLINE||R.noWrite;b.disabled=st==="saving"||st==="connecting";
+    b.textContent=st==="saving"||st==="connecting"?"🔄 동기화 중…":"🔄 동기화"+(n?" ("+n+")":"");
   }
-  function syncNow(){
+  function syncNow(quiet){
     if(OFFLINE||R.noWrite)return;
     if(!R.ready){initRemote();return}
     Object.keys(R.pending).forEach(function(k){clearTimeout(R.timers[k]);flush(k)});
+    var t0=Date.now();
+    (function wait(){
+      var busy=Object.keys(R.busy).some(function(k){return R.busy[k]});
+      if(busy&&Date.now()-t0<8000){setTimeout(wait,200);return}
+      R.ready=false;R.initing=false;wantToast=quiet!==true;lastPull=Date.now();initRemote();
+    })();
   }
+  var wantToast=false,lastPull=Date.now();
+  document.addEventListener("visibilitychange",function(){if(!document.hidden&&R.ready&&Date.now()-lastPull>20000)syncNow(true)});
   function queue(key){
     if(OFFLINE)return;
     R.pending[key]=1;updateSyncBtn();
@@ -1996,7 +2004,8 @@ label.srow{justify-content:flex-start;cursor:pointer}
       if(foldersTouched)flush("folders");
       if(petTouched)flush("pet");
       if($("#study").hidden&&$("#done").hidden){renderHome();maybeOfferResume()}
-    }).catch(function(){R.initing=false;setSync("error")});
+      if(wantToast){wantToast=false;toast("☁ 동기화 완료 · 다른 기기 기록까지 불러왔어요")}
+    }).catch(function(){R.initing=false;setSync("error");if(wantToast){wantToast=false;toast("동기화 실패 · 잠시 뒤 다시 눌러 주세요")}});
   }
 
   /* ================= home ================= */
@@ -3522,7 +3531,7 @@ label.srow{justify-content:flex-start;cursor:pointer}
   };
   window.addEventListener("online",function(){renderUnsent();syncNow()});
   window.addEventListener("offline",renderUnsent);
-  $("#sync-now").onclick=syncNow;
+  $("#sync-now").onclick=function(){syncNow()};
 
   if(OFFLINE){
     $("#off-save").textContent="이 파일 다시 저장 (.html)";
