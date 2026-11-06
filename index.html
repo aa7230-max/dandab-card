@@ -647,6 +647,7 @@ label.srow{justify-content:flex-start;cursor:pointer}
       <button type="button" class="ghost" id="go-yard" style="min-height:50px;font-weight:700;font-size:15px">🏡 내 마당</button>
     </div>
 
+    <a class="ghost" id="go-restore" href="https://claude.ai/artifact/1ZUTJggQRsrfxKuTKdKybY" target="_blank" rel="noopener" style="min-height:48px;justify-content:center;font-weight:700;font-size:15px;text-decoration:none;display:flex;align-items:center;color:var(--fg)">📚 씨캣기사 도전 복원 ↗</a>
     <div>
       <h2>내 폴더</h2>
       <div class="folders" id="folders"></div>
@@ -4067,7 +4068,7 @@ label.srow{justify-content:flex-start;cursor:pointer}
     begin(pick,{exam:true,subject:{id:"exam",name:"모의고사",chapters:chs,cards:pick}});
   };
 
-  /* ================= sound: soft piano / cello / violin + nature + effects (WebAudio, no files) ================= */
+  /* ================= sound: own music tracks + nature + effects ================= */
   var SND=(function(){
     var ac=null,out=null,musicBus=null,natBus=null,fxBus=null,verb=null,timer=null,nat=null,song=0,nextT=0,beat=0,birdT=0;
     function pref(k,d){var v=S.prefs["snd_"+k];return v===undefined?d:!!v}
@@ -4088,42 +4089,11 @@ label.srow{justify-content:flex-start;cursor:pointer}
     }
     function impulse(sec){var n=Math.floor(ac.sampleRate*sec),b=ac.createBuffer(2,n,ac.sampleRate);for(var c=0;c<2;c++){var d=b.getChannelData(c);for(var i=0;i<n;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/n,2.6)}return b}
     function N(m){return 440*Math.pow(2,(m-69)/12)}
-    /* --- instruments --- */
-    function piano(m,t,dur,vol){
-      var f=N(m),g=ac.createGain(),lp=ac.createBiquadFilter();lp.type="lowpass";lp.frequency.setValueAtTime(Math.min(5200,f*7),t);lp.frequency.exponentialRampToValueAtTime(Math.max(400,f*1.6),t+dur);
-      g.gain.setValueAtTime(0.0001,t);g.gain.linearRampToValueAtTime(vol,t+0.008);g.gain.exponentialRampToValueAtTime(vol*0.35,t+0.25);g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
-      [[1,"triangle",1],[2,"sine",0.35],[3,"sine",0.12]].forEach(function(p){var o=ac.createOscillator();o.type=p[1];o.frequency.value=f*p[0];o.detune.value=(Math.random()-.5)*4;var gg=ac.createGain();gg.gain.value=p[2];o.connect(gg);gg.connect(lp);o.start(t);o.stop(t+dur+0.05)});
-      lp.connect(g);g.connect(musicBus);
-    }
-    function bowed(m,t,dur,vol,bright){
-      var f=N(m),o=ac.createOscillator(),o2=ac.createOscillator(),lp=ac.createBiquadFilter(),g=ac.createGain(),vib=ac.createOscillator(),vg=ac.createGain();
-      o.type="sawtooth";o2.type="sawtooth";o.frequency.value=f;o2.frequency.value=f;o2.detune.value=7;
-      vib.frequency.value=5.2;vg.gain.value=f*0.006;vib.connect(vg);vg.connect(o.frequency);vg.connect(o2.frequency);
-      lp.type="lowpass";lp.frequency.value=bright||900;lp.Q.value=0.7;
-      var a=Math.min(0.6,dur*0.3);
-      g.gain.setValueAtTime(0.0001,t);g.gain.linearRampToValueAtTime(vol,t+a);g.gain.setValueAtTime(vol,t+dur-0.4);g.gain.linearRampToValueAtTime(0.0001,t+dur+0.3);
-      o.connect(lp);o2.connect(lp);lp.connect(g);g.connect(musicBus);
-      [o,o2,vib].forEach(function(x){x.start(t);x.stop(t+dur+0.4)});
-    }
-    /* --- gentle pieces: [chord roots+tones per bar], melody per bar (midi, 0 = rest) --- */
-    var PIECES=[
-      {bpm:66,ch:[[48,55,60,64],[45,52,57,60],[41,48,53,57],[43,50,55,59]],mel:[[76,74,72,0],[72,71,69,0],[69,71,72,74],[74,0,71,0]]},
-      {bpm:60,ch:[[45,52,57,60],[41,48,53,57],[48,55,60,64],[43,50,55,62]],mel:[[72,0,71,69],[69,0,67,65],[67,69,72,0],[71,0,0,0]]},
-      {bpm:70,ch:[[41,48,53,57],[43,50,55,59],[45,52,57,60],[40,47,52,55]],mel:[[69,72,77,0],[74,0,71,0],[72,76,81,0],[79,0,76,0]]},
-      {bpm:63,ch:[[43,50,55,59],[40,47,52,55],[36,43,48,52],[38,45,50,54]],mel:[[74,0,79,0],[76,74,71,0],[72,0,76,0],[74,0,0,0]]}
-    ];
-    function schedule(){
-      if(!ac||!on("music")){return}
-      var P=PIECES[song%PIECES.length],spb=60/P.bpm;
-      while(nextT<ac.currentTime+0.6){
-        var bar=Math.floor(beat/4)%P.ch.length,b=beat%4,ch=P.ch[bar],t=nextT;
-        if(b===0){bowed(ch[0]-12,t,spb*4,0.05,600)}
-        var arp=[ch[1],ch[2],ch[3],ch[2]+12];piano(arp[b]+12,t,spb*2.2,0.07);piano(arp[(b+2)%4]+12,t+spb/2,spb*1.6,0.045);
-        var phrase=Math.floor(beat/16)%2,m=P.mel[bar][b];
-        if(m){if(phrase===0)piano(m,t,spb*2.4,0.085);else bowed(m,t,spb*1.8,0.035,2400)}
-        beat++;nextT+=spb;
-      }
-    }
+    /* --- background music: Seacat's own tracks (audio files) --- */
+    var TR=["bgm/over-the-horizon.m4a","bgm/beautiful-day.m4a"],au=null,ti=-1;
+    function mvol(){return Math.max(0,Math.min(1,0.6*volPref("music")))}
+    function aud(){if(!au){au=new Audio();au.preload="none";au.addEventListener("ended",function(){track((ti+1)%TR.length,true)})}return au}
+    function track(i,force){var a=aud();if(i!==ti||force){ti=i;a.src=TR[i];a.currentTime=0}a.volume=mvol();if(playing&&on("music")){var pr=a.play();if(pr&&pr.catch)pr.catch(function(){})}else a.pause()}
     /* --- nature: wind + water + birds + night insects --- */
     var MAPNAT=[{wind:.5,water:.2,birds:1},{wind:.8,water:.1,birds:1.6},{wind:.4,water:.9,birds:.8},{wind:.7,water:.05,birds:1.2}];
     function noiseBuf(brown){var n=ac.sampleRate*3,b=ac.createBuffer(1,n,ac.sampleRate),d=b.getChannelData(0),last=0;for(var i=0;i<n;i++){var w=Math.random()*2-1;if(brown){last=(last+0.02*w)/1.02;d[i]=last*3.5}else d[i]=w}return b}
@@ -4150,20 +4120,19 @@ label.srow{justify-content:flex-start;cursor:pointer}
         if(night)cricket(ac.currentTime+0.05);else if(Math.random()<0.8)bird(ac.currentTime+0.05);
         birdT=ac.currentTime+(night?0.9+Math.random()*1.5:(2.5+Math.random()*5)/nat.cfg.birds)}
     }
-    function tick(){schedule();natTick()}
+    function tick(){natTick()}
     var playing=false;
     function bgm(play,sg){
       if(typeof sg==="number")song=sg;
-      if(!play){playing=false;if(timer){clearInterval(timer);timer=null}natStop();if(musicBus&&ac)musicBus.gain.setTargetAtTime(0.0001,ac.currentTime,0.3);return}
-      playing=true;if(!ctx())return;
-      musicBus.gain.cancelScheduledValues(ac.currentTime);musicBus.gain.setTargetAtTime(on("music")?0.9*volPref("music"):0.0001,ac.currentTime,0.4);
-      nextT=ac.currentTime+0.15;beat=0;natStart(song);
+      if(!play){playing=false;if(timer){clearInterval(timer);timer=null}natStop();if(au)au.pause();return}
+      playing=true;track(song%TR.length,false);
+      if(!ctx())return;natStart(song);
       if(!timer)timer=setInterval(tick,120);
     }
     function refresh(){if(playing)bgm(true)}
-    function volumes(){if(!ac)return;var t=ac.currentTime;musicBus.gain.setTargetAtTime(on("music")?0.9*volPref("music"):0.0001,t,0.1);natBus.gain.setTargetAtTime(0.35*volPref("nature"),t,0.1);fxBus.gain.setTargetAtTime(0.75*volPref("fx"),t,0.05)}
+    function volumes(){if(au){au.volume=mvol();if(!on("music"))au.pause();else if(playing&&au.paused)track(ti<0?0:ti,false)}if(!ac)return;var t=ac.currentTime;natBus.gain.setTargetAtTime(0.35*volPref("nature"),t,0.1);fxBus.gain.setTargetAtTime(0.75*volPref("fx"),t,0.05)}
     function home(){if(playing&&song===1&&timer)return;bgm(true,1)}
-    function pause(hid){if(!ac)return;try{if(hid)ac.suspend();else if(playing)ac.resume()}catch(e){}}
+    function pause(hid){if(au){if(hid)au.pause();else if(playing&&on("music")){var pr=au.play();if(pr&&pr.catch)pr.catch(function(){})}}if(!ac)return;try{if(hid)ac.suspend();else if(playing)ac.resume()}catch(e){}}
     /* --- effects --- */
     function blip(f,t,d,type,vol,f2){var o=ac.createOscillator(),g=ac.createGain();o.type=type||"square";o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(0.0008,t+d);o.connect(g);g.connect(fxBus);o.start(t);o.stop(t+d+0.03)}
     function seq(ms,type,vol,gap){var t=ac.currentTime+0.01;ms.forEach(function(m){if(m)blip(N(m),t,gap*0.95,type,vol);t+=gap})}
@@ -4988,7 +4957,7 @@ label.srow{justify-content:flex-start;cursor:pointer}
   function volPref(k){var v=S.prefs["vol_"+k];return typeof v==="number"?v:(k==="music"?0.35:k==="nature"?0.45:0.7)}
   function renderSettings(){
     var L=lookPrefs();
-    [["music","배경음악 (피아노·첼로·바이올린)"],["nature","자연소리 (새·바람·물)"],["fx","효과음"]].forEach(function(p){
+    [["music","배경음악 (씨캣 자작곡 2곡)"],["nature","자연소리 (새·바람·물)"],["fx","효과음"]].forEach(function(p){
       $("#set-"+p[0]).checked=SND.pref(p[0],true);$("#set-v-"+p[0]).value=Math.round(volPref(p[0])*100);
     });
     $("#set-mute").checked=!!S.prefs.mute;
