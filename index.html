@@ -44,6 +44,7 @@ body{
   -webkit-tap-highlight-color:transparent;
 }
 .wrap{max-width:540px;margin:0 auto;display:flex;flex-direction:column;gap:20px;min-width:0}
+.wrap{padding-top:20px}
 .wrap>.wrap{width:100%}
 button{font:inherit;color:inherit;cursor:pointer}
 button:disabled{cursor:not-allowed}
@@ -583,6 +584,14 @@ body.wide-room #yard{max-width:960px}
 .wallet{margin:-8px 0 0;font-family:var(--font-mono);font-size:13px;color:var(--muted)}
 .set-sheet{gap:12px;max-width:520px}
 .set-sheet h2{margin:8px 0 0}
+.aibox{border:1px solid var(--line);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.aibox input{width:100%;min-width:0;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:10px;padding:9px 10px;font:inherit;font-size:14px}
+.aibox .row{display:flex;gap:8px;flex-wrap:wrap}
+.aist{font-size:12px;font-family:var(--font-mono);color:var(--muted)}.aist.ok{color:var(--know)}.aist.err{color:var(--dont)}
+#savepill{position:fixed;z-index:29;top:calc(6px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:999px;padding:3px 11px;font:500 11px/1.4 var(--font-mono);box-shadow:0 2px 8px rgb(0 0 0 / .08);cursor:pointer;opacity:.92}
+#savepill i{width:7px;height:7px;border-radius:50%;background:var(--muted)}
+#savepill[data-s="synced"] i{background:var(--know)}#savepill[data-s="error"] i,#savepill[data-s="full"] i{background:var(--dont)}#savepill[data-s="saving"] i,#savepill[data-s="connecting"] i{background:var(--accent)}
+.imp{color:var(--hot,#e07a1f);font-size:13px;letter-spacing:1px;margin-left:6px}
 .srow{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:15px}
 .srow label{display:flex;align-items:center;gap:8px;cursor:pointer}
 .srow input[type=checkbox]{width:20px;height:20px;accent-color:var(--accent)}
@@ -1300,6 +1309,25 @@ label.srow{justify-content:flex-start;cursor:pointer}
     <div class="srow"><span>테마</span><div class="seg" id="set-theme"><button type="button" data-v="auto">자동</button><button type="button" data-v="light">밝게</button><button type="button" data-v="dark">어둡게</button></div></div>
     <div class="srow"><span>글자 크기</span><div class="seg" id="set-size"><button type="button" data-v="s">작게</button><button type="button" data-v="m">보통</button><button type="button" data-v="l">크게</button><button type="button" data-v="xl">아주 크게</button></div></div>
     <div><span class="help">포인트 색</span><div class="accs" id="set-accent"></div></div>
+    <h2>AI · 동기화</h2>
+    <p class="help">문제집 만들기와 풀이에 쓰는 AI예요. Claude → 구름 → 맥미니 → 이 기기 순서로 쓰고, 한도에 걸리거나 막히면 다음으로 넘어가요.</p>
+    <div class="aibox">
+      <div class="srow"><b>☁ 구름 서버 <small class="help">(무료 AI · 기기 간 저장)</small></b><span class="aist" id="ai-grum-st"></span></div>
+      <input type="url" id="ai-grum-u" placeholder="https://….workers.dev" aria-label="구름 서버 주소" autocomplete="off">
+      <input type="password" id="ai-grum-t" placeholder="서버 비밀번호 (구름 앱 개발자 설정과 같은 값)" aria-label="구름 서버 비밀번호" autocomplete="off">
+      <div class="row"><button type="button" class="ghost sm" id="ai-grum-save">연결</button><button type="button" class="ghost sm" id="ai-grum-off">끊기</button></div>
+    </div>
+    <div class="aibox">
+      <div class="srow"><b>🖥 맥미니 Ollama <small class="help">(인터넷 없이 · 맥에서 열 때)</small></b><span class="aist" id="ai-oll-st"></span></div>
+      <div class="row"><input type="url" id="ai-oll-u" aria-label="Ollama 주소" style="flex:2"><input type="text" id="ai-oll-m" aria-label="Ollama 모델" style="flex:1"></div>
+      <div class="row"><button type="button" class="ghost sm" id="ai-oll-test">연결 확인</button><button type="button" class="ghost sm" id="ai-oll-off">끄기</button></div>
+    </div>
+    <div class="aibox">
+      <div class="srow"><b>📱 이 기기 작은 AI <small class="help">(Qwen 2.5 1.5B · 인터넷 없이)</small></b><span class="aist" id="ai-tiny-st"></span></div>
+      <p class="help">와이파이에서 한 번 받으면(약 1.1GB) 비행기 모드에서도 문제를 만들어요. 작은 AI라 문제 질이 낮을 수 있어요.</p>
+      <div class="row"><button type="button" class="ghost sm" id="ai-tiny-get">받기</button><button type="button" class="ghost sm" id="ai-tiny-off">끄기</button></div>
+    </div>
+    <p class="msg" id="ai-msg" role="status"></p>
     <button type="button" class="ghost warn" id="set-reset">기본값으로 되돌리기</button>
   </div>
 </div><div class="modal" id="kc-pop" hidden="" role="dialog" aria-modal="true" aria-labelledby="kc-title">
@@ -1817,7 +1845,7 @@ label.srow{justify-content:flex-start;cursor:pointer}
   }
   function applyEdit(c){
     var e=S.edits[c.id];if(!e)return c;
-    return {id:c.id,ch:c.ch,fig:c.fig,figq:c.figq,q:e.q||c.q,a:(e.a&&e.a.length)?e.a:c.a,exp:typeof e.exp==="string"?e.exp:(c.exp||""),
+    return {id:c.id,ch:c.ch,fig:c.fig,figq:c.figq,imp:c.imp,q:e.q||c.q,a:(e.a&&e.a.length)?e.a:c.a,exp:typeof e.exp==="string"?e.exp:(c.exp||""),
       memo:typeof e.memo==="string"?e.memo:(c.memo||""),hidden:!!e.hidden,edited:!!(e.q||e.a||typeof e.exp==="string"||typeof e.memo==="string")};
   }
   function notHidden(c){return !c.hidden}
@@ -1852,7 +1880,7 @@ label.srow{justify-content:flex-start;cursor:pointer}
     return null;
   }
   function saveLocal(){lsSet(LSKEY,S)}
-  function markChange(){if(OFFLINE)S.unsent=(S.unsent||0)+1}
+  function markChange(){if(SYNCOFF())S.unsent=(S.unsent||0)+1}
   function setStatus(id,v){S.status[id]=v;touched[id]=1;markChange();saveLocal();queue("progress")}
   function changedSubject(sid){dirty["subj-"+sid]=1;markChange();saveLocal();queue("subj-"+sid)}
 
@@ -1881,21 +1909,77 @@ label.srow{justify-content:flex-start;cursor:pointer}
     return {name:"",k:"k2"};
   }
 
+  /* ================= 구름 server: free AI router + cross-device storage ================= */
+  var GRUM=(function(){
+    var K="dandab-grum-v1",CK="dandab-grum-seen";
+    function get(k){try{return localStorage.getItem(k)}catch(e){return null}}
+    function put(k,v){try{if(v==null)localStorage.removeItem(k);else localStorage.setItem(k,v)}catch(e){}}
+    function cfg(){try{return JSON.parse(get(K)||"null")}catch(e){return null}}
+    function setCfg(c){put(K,c?JSON.stringify(c):null);put(CK,null)}
+    /* the 구름 app opens this page with #grum=<base64 {u,t}>; keep it here and drop it from the address bar */
+    try{var m=/[#&]grum=([^&]+)/.exec(location.hash);if(m){
+      var o=JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(m[1]).replace(/-/g,"+").replace(/_/g,"/")))));
+      if(o&&o.u&&o.t)setCfg({u:String(o.u).replace(/\/+$/,""),t:String(o.t)});
+      history.replaceState(null,"",location.pathname+location.search);
+    }}catch(e){}
+    function on(){var c=cfg();return !!(c&&c.u&&c.t)}
+    function call(path,opt){
+      var c=cfg();opt=opt||{};if(!c)return Promise.reject({code:"grum_off"});
+      return fetch(c.u+path,{method:opt.method||"GET",headers:{"content-type":"application/json",authorization:"Bearer "+c.t},body:opt.body?JSON.stringify(opt.body):undefined,signal:opt.signal})
+        .then(function(r){if(r.status===401)throw {code:"grum_auth"};if(!r.ok)return r.json().catch(function(){return {}}).then(function(j){throw {code:"grum_fail",detail:(j&&(j.error||j.tried))||r.status}});return r.json()},
+          function(e){if(e&&e.name==="AbortError")throw {code:"cancelled"};throw {code:"grum_net"}});
+    }
+    /* sync: our docs live in the 구름 state table as dandab:<id>. "seen" keeps which docs exist and the last pull time. */
+    function seen(){var x=null;try{x=JSON.parse(get(CK)||"null")}catch(e){}return x&&x.ids?x:{at:0,ids:{}}}
+    function saveSeen(x){put(CK,JSON.stringify(x))}
+    async function pull(){
+      var sn=seen(),since=sn.at,changed={},guard=0;
+      while(guard++<60){
+        var r=await call("/v1/sync?since="+since),it=r.items||[];
+        it.forEach(function(x){if(x.k.indexOf("dandab:")!==0)return;var id=x.k.slice(7);if(x.v==null){delete sn.ids[id];changed[id]=null}else{sn.ids[id]=x.updated;changed[id]=x.v}});
+        var last=it.length?it[it.length-1].updated:since;
+        if(it.length<500||last===since){sn.at=Math.max(since,last);break}
+        since=last;sn.at=since;
+      }
+      saveSeen(sn);return {sn:sn,changed:changed};
+    }
+    function write(id,v){
+      var u=Date.now(),sn=seen();if(v==null)delete sn.ids[id];else sn.ids[id]=u;saveSeen(sn);
+      return call("/v1/sync",{method:"PUT",body:{items:[{k:"dandab:"+id,v:v,updated:u}]}});
+    }
+    function col(localSubj){
+      return {
+        doc:function(id){return {set:function(v){return write(id,JSON.parse(JSON.stringify(v)))},delete:function(){return write(id,null)}}},
+        get:function(){return pull().then(function(r){
+          var docs=[],ids=Object.keys(r.sn.ids);
+          Object.keys(r.changed).forEach(function(id){if(r.changed[id]!=null)docs.push({id:id,data:(function(v){return function(){return v}})(r.changed[id])})});
+          /* unchanged subject docs still exist: hand back the local copy so they are not treated as deleted */
+          ids.forEach(function(id){if(id in r.changed||id.indexOf("subj-")!==0)return;var u=localSubj(id.slice(5));if(u)docs.push({id:id,data:function(){return u}})});
+          return {empty:!ids.length,docs:docs};
+        })}
+      };
+    }
+    return {cfg:cfg,setCfg:setCfg,on:on,call:call,col:col};
+  })();
+  function SYNCOFF(){return OFFLINE&&!GRUM.on()}
+
   /* ================= remote sync (db) ================= */
   var R={col:null,ready:false,timers:{},busy:{},again:{},pending:{},noWrite:false,initing:false};
   function setSync(s){
     var el=$("#sync"),t={local:"이 기기에만 저장",connecting:"불러오는 중",synced:"기기 간 동기화",saving:"저장 중",error:"동기화 실패 · 이 기기엔 저장됨",full:"저장 공간 부족"};
     el.setAttribute("data-s",s);$("#sync-text").textContent=t[s]||"";
+    var pt={local:"📱 이 기기에 저장",connecting:"☁ 연결 중…",synced:"☁ 저장됨",saving:"☁ 저장 중…",error:"⚠ 저장 실패 · 이 기기엔 저장됨",full:"⚠ 저장 공간 부족"};
+    var pill=$("#savepill");if(pill){pill.setAttribute("data-s",s);$("#savepill-t").textContent=(pt[s]||"")+(s==="synced"?" · "+(R.grum?"구름":"계정")+" "+new Date().toTimeString().slice(0,5):"")}
     updateSyncBtn();
   }
   function updateSyncBtn(){
     var b=$("#sync-now"),st=$("#sync").getAttribute("data-s"),n=Object.keys(R.pending).length;
-    b.hidden=OFFLINE||R.noWrite;b.disabled=st==="saving"||st==="connecting";
+    b.hidden=SYNCOFF()||R.noWrite;b.disabled=st==="saving"||st==="connecting";
     b.textContent=st==="saving"||st==="connecting"?"🔄 동기화 중…":"🔄 동기화"+(n?" ("+n+")":"");
   }
   function syncNow(quiet){
-    if(OFFLINE||R.noWrite)return;
-    if(!R.ready){initRemote();return}
+    if(SYNCOFF()||R.noWrite)return;
+    if(!R.ready){R.initing=false;initRemote();return}
     Object.keys(R.pending).forEach(function(k){clearTimeout(R.timers[k]);flush(k)});
     var t0=Date.now();
     (function wait(){
@@ -1906,8 +1990,9 @@ label.srow{justify-content:flex-start;cursor:pointer}
   }
   var wantToast=false,lastPull=Date.now();
   document.addEventListener("visibilitychange",function(){if(!document.hidden&&R.ready&&Date.now()-lastPull>20000)syncNow(true)});
+  setInterval(function(){if(!document.hidden&&R.ready&&$("#study").hidden&&Date.now()-lastPull>60000)syncNow(true)},30000);
   function queue(key){
-    if(OFFLINE)return;
+    if(SYNCOFF())return;
     R.pending[key]=1;updateSyncBtn();
     if(!R.ready)return;
     clearTimeout(R.timers[key]);
@@ -1941,11 +2026,21 @@ label.srow{justify-content:flex-start;cursor:pointer}
     });
   }
   function initRemote(){
-    if(!(window.claude&&window.claude.use)){setSync("local");return}
+    if(!GRUM.on()&&!(window.claude&&window.claude.use)){setSync("local");return}
     if(R.initing||R.ready)return;
     R.initing=true;setTimeout(function(){R.initing=false;if(!R.ready&&$("#sync").getAttribute("data-s")==="connecting")setSync("error")},15000);
     setSync("connecting");
-    Promise.all([window.claude.use("db"),window.claude.use("user")]).then(function(r){
+    function claudeStart(){return Promise.all([window.claude.use("db"),window.claude.use("user")])}
+    var start=GRUM.on()?Promise.resolve().then(function(){
+      R.col=GRUM.col(function(sid){return S.user[sid]?JSON.parse(JSON.stringify(S.user[sid])):null});R.grum=true;
+      return R.col.get();
+    }).catch(function(e){
+      /* 구름 unreachable here (no network, or the page is not allowed to call it): fall back to the Claude account */
+      R.grum=false;if(e&&e.code==="grum_auth")toast("구름 서버 비밀번호가 맞지 않아요 · 설정에서 확인해 주세요");
+      if(!(window.claude&&window.claude.use))throw e;
+      return claudeStart().then(stepUser);
+    }):claudeStart().then(stepUser);
+    function stepUser(r){
       var db=r[0],user=r[1];
       if(!db||!user){R.initing=false;setSync("local");return null}
       return user.id().then(function(uid){
@@ -1953,7 +2048,8 @@ label.srow{justify-content:flex-start;cursor:pointer}
         R.col=db.collection("data/users/"+uid);
         return R.col.get();
       });
-    }).then(function(snap){
+    }
+    start.then(function(snap){
       if(!snap)return;
       if(snap.empty){
         R.ready=true;R.initing=false;
@@ -2581,6 +2677,7 @@ label.srow{justify-content:flex-start;cursor:pointer}
     card.style.transition="none";card.classList.remove("flipped");
     Q.flipped=false;Q.pending=null;
     $("#f-dot").className="dot "+ci.k;$("#f-ch").textContent=ci.name;
+    if(c.imp)$("#f-ch").appendChild(h("span",{class:"imp","aria-label":"중요도 "+c.imp},"★★★".slice(0,c.imp)));
     $("#f-n").textContent=c.a.length>1?"답 "+c.a.length+"개":"";
     $("#f-q").textContent=c.q;
     var ff=$("#f-fig");ff.hidden=!(c.fig&&c.figq);ff.innerHTML=c.fig&&c.figq?FIG(c.fig):"";
@@ -2623,7 +2720,7 @@ label.srow{justify-content:flex-start;cursor:pointer}
     var c=Q.byId[Q.queue[0]],out=$("#ask-out"),stop=$("#ask-stop");
     if(!c)return;
     $("#ask-panel").hidden=false;
-    if(!SAMPLE){out.textContent="이 화면에서는 바로 설명을 쓸 수 없어요. 'Claude에 묻기'를 눌러 주세요.";return}
+    if(!SAMPLE){out.textContent="쓸 수 있는 AI가 없어요. ⚙ 설정에서 구름이나 Ollama를 연결하거나 'Claude에 묻기'를 눌러 주세요.";return}
     if(askCtl)askCtl.abort();
     var ctl=askCtl=new AbortController();
     out.textContent="생각하는 중…";stop.hidden=false;
@@ -2923,7 +3020,7 @@ label.srow{justify-content:flex-start;cursor:pointer}
     items.forEach(function(it){
       var id="g"+hash(sid+"|"+it.q);
       if(have[id]||have["q:"+norm(it.q)])return;
-      have[id]=1;var nc={id:id,ch:chId,q:it.q,a:it.a,exp:it.exp||""};if(it.memo)nc.memo=it.memo;u.cards.push(nc);added++;
+      have[id]=1;var nc={id:id,ch:chId,q:it.q,a:it.a,exp:it.exp||""};if(it.memo)nc.memo=it.memo;if(it.imp)nc.imp=it.imp;u.cards.push(nc);added++;
     });
     if(!u.chapters.some(function(c){return u.cards.some(function(x){return x.ch===c.id})})&&!added){}
     changedSubject(sid);
@@ -3009,19 +3106,102 @@ label.srow{justify-content:flex-start;cursor:pointer}
     return {text:await f.text(),images:[]};
   }
 
-  /* Claude sampling */
-  var SAMPLE=null,LIMITS=null,samplingOff=false;
+  /* AI: Claude (this page's own) → 구름 free AI router → Ollama on the Mac → small model in this browser */
+  var SAMPLE=null,LIMITS=null,samplingOff=false,CL=null;
+  var AIX=(function(){
+    var OK="dandab-ollama",TK="dandab-tiny",WL="https://cdn.jsdelivr.net/npm/@wllama/wllama@3.8.1/esm/",
+        TINY_URL="https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/qwen2.5-1.5b-instruct-q4_k_m.gguf";
+    function lsg(k){try{return localStorage.getItem(k)}catch(e){return null}}
+    function lss(k,v){try{if(v==null)localStorage.removeItem(k);else localStorage.setItem(k,v)}catch(e){}}
+    function oll(){var d={u:"http://127.0.0.1:11434",m:"qwen2.5:7b",on:false};try{return Object.assign(d,JSON.parse(lsg(OK)||"{}"))}catch(e){return d}}
+    var NAMES={claude:"Claude",grum:"구름 무료 AI",ollama:"맥미니 Ollama",tiny:"이 기기 작은 AI"};
+    function list(){var a=[];if(CL)a.push("claude");if(GRUM.on())a.push("grum");if(oll().on)a.push("ollama");if(lsg(TK)==="1")a.push("tiny");return a}
+    function first(){return list()[0]||""}
+    function parseJ(t){
+      t=String(t||"").replace(/```(json)?/gi,"").trim();
+      var i=t.search(/[\[{]/);if(i<0)throw {code:"invalid_json"};
+      var open=t[i],close=open==="["?"]":"}",j=t.lastIndexOf(close);
+      try{return JSON.parse(t.slice(i,j+1))}catch(e){throw {code:"invalid_json"}}
+    }
+    function toData(b){return new Promise(function(res){var fr=new FileReader();fr.onload=function(){res(fr.result)};fr.onerror=function(){res(null)};fr.readAsDataURL(b)})}
+    var W=null,wLoading=null;
+    async function tiny(onP){
+      if(W&&W.isModelLoaded())return W;
+      if(wLoading)return wLoading;
+      wLoading=(async function(){
+        var mod=await import(WL+"index.js");
+        var w=new mod.Wllama({default:WL+"wasm/wllama.wasm"},{allowOffline:true,suppressNativeLog:true});
+        await w.loadModelFromUrl(TINY_URL,{n_ctx:3072,useCache:true,progressCallback:function(p){if(onP&&p.total)onP(p.loaded/p.total)}});
+        W=w;return w;
+      })();
+      try{return await wLoading}catch(e){throw {code:"tiny_load",detail:String(e&&e.message||e)}}finally{wLoading=null}
+    }
+    async function one(name,prompt,o,wantJson){
+      var sig=o.signal,res,text;
+      if(name==="claude"){
+        if(wantJson)return CL.json(prompt,{signal:sig,images:o.images});
+        return CL(prompt,{signal:sig,onText:o.onText});
+      }
+      if(name==="grum"){
+        var imgs=[];if(o.images)for(var i=0;i<o.images.length&&i<2;i++){var d=await toData(o.images[i]);if(d)imgs.push(d)}
+        res=await GRUM.call("/v1/chat",{method:"POST",signal:sig,body:{prompt:prompt+(wantJson?"\n\nJSON 하나만 출력해. 설명 문장 없이.":""),json:wantJson,images:imgs.length?imgs:undefined}});
+        text=String(res&&res.text||"");
+      }else if(name==="ollama"){
+        if(o.images&&o.images.length&&!/\S/.test(prompt.split("학습 자료:")[1]||""))throw {code:"images_unavailable"};
+        var c=oll(),r;
+        try{r=await fetch(c.u.replace(/\/+$/,"")+"/api/chat",{method:"POST",signal:sig,headers:{"content-type":"application/json"},
+          body:JSON.stringify({model:c.m,stream:false,format:wantJson?"json":undefined,options:{num_ctx:8192,temperature:0.3},
+            messages:[{role:"user",content:prompt+(wantJson?'\n\n출력은 {"items":[...]} 모양의 JSON 객체 하나만.':"")}]})})}
+        catch(e){if(e&&e.name==="AbortError")throw {code:"cancelled"};throw {code:"ollama_off"}}
+        if(!r.ok)throw {code:"ollama_off",detail:r.status};
+        var d2=await r.json();text=String(d2&&d2.message&&d2.message.content||"").replace(/<think>[\s\S]*?<\/think>/g,"");
+      }else if(name==="tiny"){
+        if(o.images&&o.images.length&&!/\S/.test(prompt.split("학습 자료:")[1]||""))throw {code:"images_unavailable"};
+        var w=await tiny();if(sig&&sig.aborted)throw {code:"cancelled"};
+        var out=await w.createChatCompletion({messages:[{role:"user",content:prompt+(wantJson?'\n\n출력은 {"items":[...]} 모양의 JSON 하나만.':"")}],max_tokens:wantJson?1100:500,temperature:0.3});
+        text=String(out&&out.choices&&out.choices[0]&&out.choices[0].message&&out.choices[0].message.content||"");
+      }
+      if(sig&&sig.aborted)throw {code:"cancelled"};
+      if(wantJson)return parseJ(text);
+      if(o.onText)o.onText({text:text});
+      return {text:text,truncated:false};
+    }
+    async function run(prompt,o,wantJson){
+      var L=list(),err=null;if(!L.length)throw {code:"no_ai"};
+      for(var i=0;i<L.length;i++){
+        try{var r=await one(L[i],prompt,o,wantJson);f.last=L[i];return r}
+        catch(e){
+          if(e&&e.code==="cancelled"||o.signal&&o.signal.aborted)throw e&&e.code==="cancelled"?e:{code:"cancelled"};
+          err=err||e;if(o.onSwitch&&i<L.length-1)o.onSwitch(NAMES[L[i+1]]);
+        }
+      }
+      throw err||{code:"no_ai"};
+    }
+    var f=function(prompt,o){return run(prompt,o||{},false)};
+    f.json=function(prompt,o){return run(prompt,o||{},true)};
+    f.list=list;f.first=first;f.label=function(k){return NAMES[k]||k};f.oll=oll;
+    f.setOll=function(c){lss(OK,c?JSON.stringify(c):null)};
+    f.tinyOn=function(v){lss(TK,v?"1":null)};f.tiny=tiny;
+    /* how much material one call can take, and how many cards to ask for at once */
+    f.chunk=function(){var x=first();return x==="claude"?20000:x==="grum"||x==="ollama"?6000:1200};
+    f.perMax=function(){var x=first();return x==="claude"?40:x==="grum"?8:x==="ollama"?6:3};
+    f.limits=function(){return CL&&CL.limits?CL.limits():Promise.resolve(GRUM.on()?{images:{maxCount:2}}:{images:null})};
+    return f;
+  })();
+  function aiInit(){
+    if(AIX.list().length){
+      SAMPLE=AIX;samplingOff=false;$("#mk-run").disabled=false;
+      var st=$("#mk-status");if(st.textContent.indexOf("자동 생성은")===0){st.textContent=""}
+      AIX.limits().then(function(l){LIMITS=l},function(){LIMITS=null});
+    }else{SAMPLE=null;mkUnavailable()}
+  }
   if(window.claude&&window.claude.use){
-    window.claude.use("sample").then(function(s){
-      SAMPLE=s;
-      if(!s){mkUnavailable();return}
-      return s.limits().then(function(l){LIMITS=l},function(){LIMITS=null});
-    });
-  }else{setTimeout(mkUnavailable,0)}
+    window.claude.use("sample").then(function(s){CL=s||null;aiInit()},function(){aiInit()});
+  }else{setTimeout(aiInit,0)}
   function mkUnavailable(){
     samplingOff=true;
     var st=$("#mk-status");st.className="msg";
-    st.textContent="이 화면에서는 자동 생성을 쓸 수 없어요. 자료 파일을 Claude 채팅에 올려 주시면 문제로 바꿔 드려요. 직접 입력은 그대로 쓸 수 있어요.";
+    st.textContent="자동 생성은 AI가 하나 있어야 해요. 홈의 ⚙ 설정 → AI · 동기화에서 구름 서버나 맥미니 Ollama를 연결해 주세요. 직접 입력은 그대로 쓸 수 있어요.";
     $("#mk-run").disabled=true;
   }
   var TYPE_DESC={
@@ -3038,11 +3218,12 @@ label.srow{justify-content:flex-start;cursor:pointer}
       "- q는 한국어 시험 문제 문장으로, 무엇을 몇 개 쓰는지 분명히 한다.\n"+
       "- a는 짧은 답 항목의 배열이다. 여러 개를 쓰는 문제는 항목마다 나눈다. 한 항목은 45자 이내.\n"+
       "- 화학식·단위는 아래첨자(H₂O)와 기호(→, ℃, m², √)를 그대로 쓴다.\n"+
-      "- exp는 근거 한 문장이다. 없으면 빈 문자열.\n"+
+      "- exp는 풀이다. 계산형은 공식 → 값 대입 → 계산 → 단위 순서로, 그 밖에는 왜 그런지 1~2문장으로 쓴다.\n"+
+      "- imp는 시험 중요도 정수다. 3=거의 매회 나오는 핵심, 2=자주 나옴, 1=가끔 나옴.\n"+
       "- mn은 두문자·말장난 같은 짧은 암기 요령이다(예: 일이주판). 자연스러운 것이 없으면 빈 문자열.\n"+
       "- '이미 있는 문제'와 같은 내용은 만들지 않는다.\n\n"+
       "출력은 JSON 배열 하나만. 예시:\n"+
-      "[{\"q\":\"변압기 병렬운전 조건 3가지\",\"a\":[\"극성이 같을 것\",\"권수비가 같을 것\",\"%임피던스 강하가 같을 것\"],\"exp\":\"3상은 상회전 방향과 위상변위도 같아야 한다.\",\"mn\":\"극·권·임\"}]\n\n"+
+      "[{\"q\":\"변압기 병렬운전 조건 3가지\",\"a\":[\"극성이 같을 것\",\"권수비가 같을 것\",\"%임피던스 강하가 같을 것\"],\"exp\":\"3상은 상회전 방향과 위상변위도 같아야 한다.\",\"mn\":\"극·권·임\",\"imp\":3}]\n\n"+
       "이미 있는 문제:\n"+(o.existing.length?o.existing.map(function(q){return "- "+q.replace(/\n/g," ")}).join("\n"):"(없음)")+"\n\n"+
       (o.imageNote?o.imageNote+"\n\n":"")+
       (o.material?"학습 자료:\n<<<\n"+o.material+"\n>>>":"");
@@ -3056,7 +3237,8 @@ label.srow{justify-content:flex-start;cursor:pointer}
       if(!Array.isArray(a))return;
       a=a.map(function(x){return String(x).trim()}).filter(Boolean);
       if(!q||!a.length)return;
-      out.push({q:q,a:a,exp:String(it.exp||"").trim(),memo:String(it.mn||it.memo||"").trim()});
+      var imp=Math.round(+it.imp||0);imp=imp>=1&&imp<=3?imp:0;
+      out.push({q:q,a:a,exp:String(it.exp||"").trim(),memo:String(it.mn||it.memo||"").trim(),imp:imp});
     });
     return out;
   }
@@ -3077,6 +3259,12 @@ label.srow{justify-content:flex-start;cursor:pointer}
       case "lib":return "파일을 여는 도구를 불러오지 못했어요. 인터넷 연결을 확인하고 다시 눌러 주세요.";
       case "empty":return "파일에서 글자를 찾지 못했어요. 스캔본이면 사진(JPG·PNG)으로 올리거나 채팅에 올려 주세요.";
       case "need_input":return "파일을 고르거나 자료를 붙여넣어 주세요.";
+      case "no_ai":return "쓸 수 있는 AI가 없어요. ⚙ 설정 → AI · 동기화에서 연결해 주세요.";
+      case "grum_auth":return "구름 서버 비밀번호가 맞지 않아요. ⚙ 설정에서 확인해 주세요.";
+      case "grum_net":return "구름 서버에 닿지 않아요. 인터넷을 확인해 주세요.";
+      case "grum_fail":return "구름의 무료 AI들이 지금 모두 한도에 걸렸어요. 잠시 뒤 다시 눌러 주세요.";
+      case "ollama_off":return "맥미니 Ollama에 연결하지 못했어요. 맥에서 Ollama가 켜져 있는지 확인해 주세요.";
+      case "tiny_load":return "이 기기 작은 AI를 불러오지 못했어요. 와이파이에서 설정 → 받기를 다시 눌러 주세요.";
       default:return "만들지 못했어요. 다시 눌러 주세요.";
     }
   }
@@ -3090,7 +3278,7 @@ label.srow{justify-content:flex-start;cursor:pointer}
     mkItems.forEach(function(it,i){
       var cb=h("input",{type:"checkbox",id:"pv-"+i});cb.checked=it.on;
       cb.onchange=function(){it.on=cb.checked;pvCount()};
-      box.appendChild(h("label",{for:"pv-"+i},cb,h("div",null,h("div",{class:"pq"},it.q),h("div",{class:"pa"},it.a.join(" / ")))));
+      box.appendChild(h("label",{for:"pv-"+i},cb,h("div",null,h("div",{class:"pq"},(it.imp?"★★★".slice(0,it.imp)+" ":"")+it.q),h("div",{class:"pa"},it.a.join(" / ")),it.exp?h("div",{class:"pa",style:"opacity:.75"},"풀이: "+it.exp):null)));
     });
     pvCount();
   }
@@ -3130,11 +3318,11 @@ label.srow{justify-content:flex-start;cursor:pointer}
       if(images.length>maxImg)images=images.slice(0,maxImg);
       text=text.replace(/[ \t]+/g," ").replace(/\n{3,}/g,"\n\n").trim();
       if(!text&&!images.length)throw {code:"empty"};
-      var SZ=20000,chunks=[],i;
-      for(i=0;i<text.length&&chunks.length<8;i+=SZ)chunks.push(text.slice(i,i+SZ));
-      var cutNote=text.length>SZ*8?" 자료가 길어 앞부분만 썼어요.":"";
+      var SZ=AIX.chunk(),chunks=[],i,MAXC=AIX.first()==="tiny"?12:8;
+      for(i=0;i<text.length&&chunks.length<MAXC;i+=SZ)chunks.push(text.slice(i,i+SZ));
+      var cutNote=text.length>SZ*MAXC?" 자료가 길어 앞부분만 썼어요.":"";
       if(!chunks.length)chunks.push("");
-      var total=+$("#mk-count").value,per=Math.max(3,Math.ceil(total/chunks.length));
+      var total=+$("#mk-count").value,per=Math.min(AIX.perMax(),Math.max(3,Math.ceil(total/chunks.length)));
       var seen=existingQs(target.sid),existList=[];
       var s0=target.sid&&subj(target.sid);
       if(s0)existList=s0.cards.slice(-120).map(function(c){return c.q});
@@ -3146,7 +3334,7 @@ label.srow{justify-content:flex-start;cursor:pointer}
           imageNote:(i===0&&images.length)?"첨부한 이미지는 학습 자료 페이지다. 이미지 속 글과 표도 자료로 쓴다.":"",
           material:chunks[i]
         });
-        var opts={signal:ctl.signal};
+        var opts={signal:ctl.signal,onSwitch:function(n){status("한도에 걸려 "+n+"(으)로 바꿔서 만드는 중…")}};
         if(i===0&&images.length)opts.images=images;
         var res=await SAMPLE.json(prompt,opts);
         cleanItems(res).forEach(function(it){
@@ -3155,7 +3343,7 @@ label.srow{justify-content:flex-start;cursor:pointer}
         renderPreview();
       }
       st.className="msg ok";
-      st.textContent=mkItems.length?mkItems.length+"문제를 만들었어요. 확인하고 추가하세요."+scannedNote+cutNote:"새로 만들 문제를 찾지 못했어요. 다른 자료로 해 보세요.";
+      st.textContent=mkItems.length?mkItems.length+"문제를 만들었어요 ("+AIX.label(AIX.last)+"). 확인하고 추가하세요."+scannedNote+cutNote:"새로 만들 문제를 찾지 못했어요. 다른 자료로 해 보세요.";
     }catch(e){
       st.className="msg err";st.textContent=errCopy(e);
       if(e&&e.code==="not_granted"||e&&e.code==="sampling_disabled")samplingOff=true;
@@ -3510,7 +3698,7 @@ label.srow{justify-content:flex-start;cursor:pointer}
   };
   function renderUnsent(){
     var bar=$("#unsent-bar"),n=S.unsent||0;
-    bar.hidden=!(OFFLINE&&n>0);
+    bar.hidden=!(SYNCOFF()&&n>0);
     if(bar.hidden)return;
     $("#unsent-n").textContent=n;
     var on=navigator.onLine!==false;
@@ -4986,6 +5174,48 @@ label.srow{justify-content:flex-start;cursor:pointer}
   Array.prototype.forEach.call(document.querySelectorAll("#set-size button"),function(b){b.onclick=function(){lookPrefs().size=b.getAttribute("data-v");saveLocal();applyLook();renderSettings()}});
   $("#set-reset").onclick=function(){S.prefs.look={};["music","nature","fx"].forEach(function(k){delete S.prefs["vol_"+k];delete S.prefs["snd_"+k]});S.prefs.mute=false;saveLocal();applyLook();SND.refresh();SND.volumes();renderSettings();toast("기본 설정으로 돌렸어요")};
   $("#go-set").onclick=function(){renderSettings();$("#set-pop").hidden=false;SND.unlock();SND.home()};
+  /* ---- AI · 동기화 settings ---- */
+  function aiStat(id,t,cls){var e=$(id);e.textContent=t;e.className="aist"+(cls?" "+cls:"")}
+  function aiMsg(t,cls){var m=$("#ai-msg");m.className="msg"+(cls?" "+cls:"");m.textContent=t}
+  function renderAI(){
+    var g=GRUM.cfg();$("#ai-grum-u").value=g?g.u:"https://si-character-server.seacat.workers.dev";$("#ai-grum-t").value=g?g.t:"";
+    aiStat("#ai-grum-st",g?(R.grum&&R.ready?"● 연결됨":"연결 정보 있음"):"꺼짐",g&&R.grum&&R.ready?"ok":"");
+    var o=AIX.oll();$("#ai-oll-u").value=o.u;$("#ai-oll-m").value=o.m;aiStat("#ai-oll-st",o.on?"● 켜짐":"꺼짐",o.on?"ok":"");
+    var tOn=AIX.list().indexOf("tiny")>-1;aiStat("#ai-tiny-st",tOn?"● 받음":"꺼짐",tOn?"ok":"");$("#ai-tiny-get").textContent=tOn?"다시 불러오기":"받기 (약 1.1GB)";
+  }
+  $("#go-set").addEventListener("click",renderAI);
+  $("#ai-grum-save").onclick=function(){
+    var u=$("#ai-grum-u").value.trim().replace(/\/+$/,""),t=$("#ai-grum-t").value.trim();
+    if(!/^https:\/\/\S+$/.test(u)||!t){aiMsg("주소(https://…)와 비밀번호를 모두 넣어 주세요.","err");return}
+    GRUM.setCfg({u:u,t:t});aiMsg("확인하는 중…");
+    GRUM.call("/v1/sync?since="+Date.now()).then(function(){
+      aiMsg("구름 서버에 연결했어요. 이제 진도가 구름에 저장되고, 같은 서버를 연결한 패드·폰과 함께 써요.","ok");
+      R.ready=false;R.initing=false;initRemote();aiInit();setTimeout(renderAI,1500);
+    },function(e){
+      aiMsg(e&&e.code==="grum_auth"?"비밀번호가 맞지 않아요.":"서버에 닿지 않아요. 주소를 확인해 주세요. (Claude 앱 안에서는 막혀 있을 수 있어요 · 홈 화면 앱이나 크롬에서 열어 주세요)","err");
+      GRUM.setCfg(null);renderAI();
+    });
+  };
+  $("#ai-grum-off").onclick=function(){GRUM.setCfg(null);R.grum=false;R.ready=false;R.initing=false;initRemote();aiInit();renderAI();aiMsg("구름 연결을 끊었어요. 기록은 이 기기에 그대로 있어요.")};
+  $("#ai-oll-test").onclick=function(){
+    var u=$("#ai-oll-u").value.trim().replace(/\/+$/,"")||"http://127.0.0.1:11434",m=$("#ai-oll-m").value.trim()||"qwen2.5:7b";
+    aiMsg("Ollama 확인 중…");
+    fetch(u+"/api/tags").then(function(r){return r.json()}).then(function(j){
+      var names=(j.models||[]).map(function(x){return x.name});
+      if(names.length&&names.indexOf(m)<0&&names.indexOf(m+":latest")<0){aiMsg("Ollama는 켜져 있는데 "+m+" 모델이 없어요. 있는 모델: "+names.join(", "),"err");return}
+      AIX.setOll({u:u,m:m,on:true});aiInit();renderAI();aiMsg("맥미니 Ollama("+m+")를 켰어요. 인터넷 없이도 문제를 만들어요.","ok");
+    },function(){
+      aiMsg("Ollama에 닿지 않아요. 맥에서 Ollama를 켜고, 터미널에 launchctl setenv OLLAMA_ORIGINS \"*\" 를 입력한 뒤 Ollama를 다시 켜 주세요.","err");
+    });
+  };
+  $("#ai-oll-off").onclick=function(){var o=AIX.oll();o.on=false;AIX.setOll(o);aiInit();renderAI();aiMsg("맥미니 Ollama를 껐어요.")};
+  $("#ai-tiny-get").onclick=function(){
+    var b=this;b.disabled=true;aiMsg("작은 AI 받는 중… 0%");
+    AIX.tiny(function(p){aiMsg("작은 AI 받는 중… "+Math.round(p*100)+"% (화면을 켜 두세요)")}).then(function(){
+      AIX.tinyOn(true);aiInit();renderAI();aiMsg("받았어요. 이제 인터넷이 없어도 문제를 만들 수 있어요.","ok");
+    },function(e){aiMsg("받지 못했어요: "+(e&&e.detail||"인터넷을 확인해 주세요")+" · 이 브라우저가 지원하지 않을 수도 있어요.","err")}).then(function(){b.disabled=false});
+  };
+  $("#ai-tiny-off").onclick=function(){AIX.tinyOn(false);aiInit();renderAI();aiMsg("이 기기 작은 AI를 껐어요.")};
   $("#set-close").onclick=function(){$("#set-pop").hidden=true;if(!$("#home").hidden)renderHome()};
   $("#set-pop").addEventListener("click",function(e){if(e.target===this){this.hidden=true}});
   applyLook();
@@ -5099,6 +5329,7 @@ label.srow{justify-content:flex-start;cursor:pointer}
     $("#sheet").hidden=true;$("#fsheet").hidden=true;$("#funny").hidden=true;
   });
   window.addEventListener("pagehide",function(){if(!$("#study").hidden)saveSession()});
+  $("#savepill").onclick=function(){if(SYNCOFF()){toast("이 기기에만 저장돼요 · 설정 → 구름 서버를 연결하면 패드와 폰이 함께 저장돼요");return}syncNow()};
 
   renderHome();
   renderSplash();
