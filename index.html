@@ -584,6 +584,15 @@ body.wide-room #yard{max-width:960px}
 .wallet{margin:-8px 0 0;font-family:var(--font-mono);font-size:13px;color:var(--muted)}
 .set-sheet{gap:12px;max-width:520px}
 .set-sheet h2{margin:8px 0 0}
+#grum-buddy{position:relative;border:0;background:none;padding:0;margin:6px 0 2px;display:flex;align-items:center;gap:8px;min-height:46px;width:100%;cursor:pointer}
+#gb-face{flex:none;width:44px;height:44px;border-radius:50%;background:#fff;box-shadow:0 4px 14px rgb(0 0 0 / .18);border:2px solid #fff;transition:transform .25s}
+#grum-buddy.bounce #gb-face{animation:gbb .5s ease}
+@keyframes gbb{30%{transform:translateY(-8px) scale(1.06)}60%{transform:translateY(0)}}
+#gb-say{background:var(--surface,#fff);color:var(--fg,#222);border:1px solid var(--line,#ddd);border-radius:14px 14px 14px 4px;padding:7px 10px;font-size:13px;line-height:1.4;text-align:left;box-shadow:0 4px 12px rgb(0 0 0 / .12)}
+.gb-mini{width:26px;height:26px;border-radius:50%;vertical-align:-7px;margin-right:4px}
+.gchips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+#ask-pout{white-space:pre-wrap;font-size:14px;line-height:1.6;margin-top:8px}
+@media (prefers-reduced-motion:reduce){#grum-buddy.bounce #gb-face{animation:none}}
 .aibox{border:1px solid var(--line);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px}
 .aibox input{width:100%;min-width:0;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:10px;padding:9px 10px;font:inherit;font-size:14px}
 .aibox .row{display:flex;gap:8px;flex-wrap:wrap}
@@ -1042,7 +1051,7 @@ label.srow{justify-content:flex-start;cursor:pointer}
       <div class="tbtns">
         <button type="button" class="ghost" id="to-grum" aria-label="구름 앱으로 돌아가기">‹ 구름</button>
         <button type="button" class="ghost" id="snd-tog" aria-label="배경음 끄기 켜기">🎵</button>
-        <button type="button" class="ghost" id="ask-open" aria-label="구름에게 물어보기">💬 질문</button>
+        <button type="button" class="ghost" id="ask-open" aria-label="구름에게 물어보기">☁️ 질문</button>
       </div>
     </div>
     <div class="bar" role="progressbar" aria-label="진행률" aria-valuemin="0" aria-valuemax="100" id="bar-wrap"><i id="bar"></i></div>
@@ -1078,6 +1087,7 @@ label.srow{justify-content:flex-start;cursor:pointer}
       </div>
     </div>
 
+    <button type="button" id="grum-buddy" aria-label="구름이와 같이 공부"><img id="gb-face" src="grum/curious.webp" alt=""><span id="gb-say" hidden></span></button>
     <div class="controls">
       <button type="button" class="cbtn dont" id="b-dont" aria-pressed="false">← 모른다</button>
       <button type="button" class="cbtn mid" id="b-mid">답 보기</button>
@@ -1152,7 +1162,7 @@ label.srow{justify-content:flex-start;cursor:pointer}
         <button type="button" class="ghost sm fix-toggle" id="fix-open" aria-expanded="false">✎ 답 고치기</button>
       </div>
       <div class="panel" id="ask-panel" hidden="">
-        <div class="phead"><h3>Claude 설명</h3><button type="button" class="ghost sm" id="ask-stop" hidden="">멈추기</button></div>
+        <div class="phead"><h3>☁️ 구름이 설명</h3><button type="button" class="ghost sm" id="ask-stop" hidden="">멈추기</button></div>
         <div class="askout" id="ask-out" role="status"></div>
       </div>
       <div class="panel" id="fix-panel" hidden="">
@@ -1341,10 +1351,11 @@ label.srow{justify-content:flex-start;cursor:pointer}
   </div>
 </div><div class="modal" id="ask-pop" hidden="" role="dialog" aria-modal="true" aria-labelledby="ask-title">
   <div class="sheet">
-    <h3 id="ask-title">구름에게 물어보기</h3>
+    <h3 id="ask-title"><img src="grum/curious.webp" alt="" class="gb-mini"> 구름이랑 같이 공부</h3>
     <p class="msg" id="ask-ctx"></p>
-    <textarea id="ask-in" placeholder="이 문제에서 궁금한 점을 적어 보세요"></textarea>
-    <div class="aibox" id="ask-out" hidden=""></div>
+    <div class="gchips"><button type="button" class="ghost sm" data-g="hint">💡 힌트만</button><button type="button" class="ghost sm" data-g="easy">📖 쉽게 설명</button><button type="button" class="ghost sm" data-g="memo">🧠 암기법</button><button type="button" class="ghost sm" data-g="check">✍️ 내 답 봐줘</button><button type="button" class="ghost sm" data-g="similar">🔁 비슷한 문제</button></div>
+    <textarea id="ask-in" placeholder="모르는 걸 구름이에게 물어봐요"></textarea>
+    <div class="aibox" id="ask-pout" hidden=""></div>
     <div class="row" style="justify-content:center">
       <button type="button" class="ghost" id="ask-x">닫기</button>
       <button type="button" class="primary" id="ask-go">물어보기</button>
@@ -2745,7 +2756,7 @@ label.srow{justify-content:flex-start;cursor:pointer}
     var ctl=askCtl=new AbortController();
     out.textContent="생각하는 중…";stop.hidden=false;
     $("#ask-panel").scrollIntoView({behavior:"smooth",block:"nearest"});
-    SAMPLE(askText(c)+"\n\n규칙: 한국어로, 마크다운 기호 없이 6줄 이내로 쓴다. 주어진 정답이 틀렸거나 빠진 항목이 있으면 첫 줄을 '정답 확인 필요:'로 시작해 이유를 적는다.",{
+    SAMPLE(GB.persona()+"\n"+askText(c)+"\n\n규칙: 한국어로, 마크다운 기호 없이 6줄 이내로 쓴다. 주어진 정답이 틀렸거나 빠진 항목이 있으면 첫 줄을 '정답 확인 필요:'로 시작해 이유를 적는다.",{
       signal:ctl.signal,onText:function(u){if(askCtl===ctl)out.textContent=u.text}
     }).then(function(r){
       if(askCtl===ctl&&r.truncated)out.textContent+="\n(길어서 중간에 끊겼어요)";
@@ -2884,6 +2895,7 @@ label.srow{justify-content:flex-start;cursor:pointer}
     if(choice==="know")Q.known[id]=true;
     else if(!Q.exam)Q.queue.splice(Math.min(Q.queue.length,3),0,id);
     petGain(choice,id,Q.exam);
+    try{GB.react(choice,Q.byId[id])}catch(e){}
     Q.busy=false;
     if(!Q.queue.length){clearSession();renderDone();return}
     saveSession();
@@ -2955,6 +2967,7 @@ label.srow{justify-content:flex-start;cursor:pointer}
   function renderDone(){
     var ids=Object.keys(Q.first),fk=0,missed=[];
     ids.forEach(function(id){if(Q.first[id]==="know")fk++;else missed.push(id)});
+    try{GB.done(fk,ids.length,missed.map(function(id){return Q.byId[id]}))}catch(e){}
     $("#d-eyebrow").textContent=Q.subject.name+" · 이번 회차 끝";
     var hard=missed.length>Q.total/2;
     setPet($("#d-pet"),petOf(Q.subject.id),hard?9:7);
@@ -3911,6 +3924,7 @@ label.srow{justify-content:flex-start;cursor:pointer}
   function toast(t){toastQ.push(t);if(!toastOn)nextToast()}
   function nextToast(){
     var t=toastQ.shift(),el=$("#toast");
+    if(!el){el=document.createElement("div");el.id="toast";el.className="toast";el.setAttribute("role","status");el.hidden=true;document.body.appendChild(el)}
     if(!t){toastOn=false;el.hidden=true;return}
     toastOn=true;el.textContent=t;el.hidden=false;el.classList.remove("show");void el.offsetWidth;el.classList.add("show");
     setTimeout(nextToast,2400);
@@ -5349,34 +5363,69 @@ label.srow{justify-content:flex-start;cursor:pointer}
     $("#sheet").hidden=true;$("#fsheet").hidden=true;$("#funny").hidden=true;
   });
   window.addEventListener("pagehide",function(){if(!$("#study").hidden)saveSession()});
-  $("#savepill").onclick=function(){if(SYNCOFF()){toast("이 기기에만 저장돼요 · 설정 → 구름 서버를 연결하면 패드와 폰이 함께 저장돼요");return}syncNow()};
+  if($("#savepill"))$("#savepill").onclick=function(){if(SYNCOFF()){toast("이 기기에만 저장돼요 · 설정 → 구름 서버를 연결하면 패드와 폰이 함께 저장돼요");return}syncNow()};
 
   /* top bar of the study screen: back to 구름, background sound, ask 구름 about the card */
-  function sndTogUI(){var b=$("#snd-tog");if(b)b.textContent=SND.on("music")?"🎵 끄기":"🔇 켜기"}
-  $("#snd-tog").onclick=function(){if(S.prefs.mute)S.prefs.mute=false;SND.toggle("music");sndUI();sndTogUI()};
+  /* 배경음 = 배경음악 + 자연소리(바람·물·새). 예전엔 음악만 꺼져서 자연소리가 계속 났어요. */
+  function bgOn(){return SND.on("music")||SND.on("nature")}
+  function sndTogUI(){var b=$("#snd-tog");if(b){b.textContent=bgOn()?"🎵 끄기":"🔇 켜기";b.setAttribute("aria-pressed",bgOn()?"false":"true")}}
+  $("#snd-tog").onclick=function(){
+    if(S.prefs.mute)S.prefs.mute=false;
+    var want=!bgOn();S.prefs.snd_music=want;S.prefs.snd_nature=want;saveLocal();
+    SND.unlock();if(want)SND.bgm(true);else SND.bgm(false);SND.volumes();
+    sndUI();sndTogUI();toast(want?"배경음을 켰어요":"배경음을 껐어요");
+  };
   sndTogUI();
   $("#to-grum").onclick=function(){
     try{window.close()}catch(e){}
     setTimeout(function(){toast("구름 앱으로 돌아가려면 폰의 뒤로 가기나 최근 앱 버튼을 눌러 주세요")},300);
   };
   function curCard(){var id=Q.queue&&Q.queue[0];return id!=null?Q.byId[id]:null}
+  /* ☁️ 구름이: 카드 공부를 옆에서 같이 해요. 맞히면 같이 기뻐하고, 틀린 건 구름이 노트에 적어 두었다가 다시 물어봐요.
+     공부 기록은 구름 앱에도 남겨서, 구름 앱에서 대화할 때 구름이가 "아까 같이 본 것"을 알아요. */
+  var GB=(function(){
+    var el=$("#grum-buddy"),face=$("#gb-face"),say=$("#gb-say"),tT=null,n=0,missed=[],last=0;
+    var LOGK="grum-study-log";function log(){try{return JSON.parse(localStorage.getItem(LOGK)||"[]")}catch(e){return []}}
+    function pick(a){return a[Math.floor(Math.random()*a.length)]}
+    function talk(t,f,sec){if(!el)return;face.src="grum/"+(f||"curious")+".webp";say.textContent=t;say.hidden=false;el.classList.remove("bounce");void el.offsetWidth;el.classList.add("bounce");clearTimeout(tT);tT=setTimeout(function(){say.hidden=true;face.src="grum/curious.webp"},(sec||4)*1000)}
+    var ASK={hint:"정답을 바로 말하지 말고, 내가 스스로 떠올릴 수 있게 첫 힌트만 줘.",easy:"이 문제를 처음 보는 사람도 알게 쉽게 설명해 줘. 핵심 개념 한 줄, 왜 그런지 두세 줄.",memo:"이 답을 오래 기억할 수 있는 암기법(앞글자 따기, 이야기, 이미지)을 만들어 줘.",check:"내가 쓴 답이 맞는지 채점해 주고, 빠진 항목이나 틀린 부분을 짚어 줘.",similar:"같은 원리로 확인할 수 있는 짧은 연습 문제를 하나 내 줘. 정답은 맨 아래 '정답:' 뒤에."};
+    function persona(){var lg=log().slice(-3).map(function(x){return x.subj+" "+x.known+"/"+x.total+(x.miss&&x.miss.length?" (헷갈린 것: "+x.miss.slice(0,3).join(", ")+")":"")}).join(" · ");
+      return "너는 '구름'이야. 주인(씨캣)이랑 전기·위험물 실기 단답 카드를 같이 공부하는 친구 같은 AI야. 반말로 다정하게, 하지만 내용은 정확하게. 자료에 없는 법령 수치는 지어내지 말고, 주어진 정답이 의심스러우면 솔직하게 말해. 마크다운 기호 없이 짧은 줄로."+(lg?"\n최근 같이 공부한 기록: "+lg:"")}
+    function react(choice,c){
+      n++;var title=c&&c.q?c.q.replace(/\s+/g," ").slice(0,18):"";
+      if(choice==="dont"&&c){if(missed.indexOf(c)<0)missed.push(c);if(Date.now()-last>6000){last=Date.now();talk(pick(["괜찮아, 나도 헷갈렸어. 같이 외워 보자!","이건 구름이 노트에 적어 둘게. 날 누르면 암기법 만들어 줄게.","어려운 거 맞아. 힌트 줄까?"]),"sad",5)}return}
+      if(n%8===0&&missed.length){var m=missed.shift();talk("아까 틀린 '"+m.q.replace(/\s+/g," ").slice(0,16)+"…' 기억나? 곧 다시 나와!","curious",5);return}
+      if(Date.now()-last>9000&&Math.random()<.35){last=Date.now();talk(pick(["좋아! 나도 외웠어.","오, 빠르다!","이건 이제 우리 거야.","집중력 최고야!"]),"happy",3)}
+    }
+    function done(known,total,miss){
+      var rate=total?Math.round(known/total*100):0;
+      talk(rate>=80?"이번 회차 "+rate+"%! 오늘 진짜 잘했어.":rate>=50?rate+"%! 틀린 건 내가 기억해 둘게, 다음에 같이 다시 보자.":"괜찮아, 오늘 본 것만으로도 남아. 틀린 것부터 같이 다시 하자.",rate>=80?"joy":"curious",7);
+      var L=log();L.push({at:Date.now(),subj:(Q.subject&&Q.subject.name)||"",known:known,total:total,miss:miss.filter(Boolean).slice(0,8).map(function(c){return c.q.replace(/\s+/g," ").slice(0,40)})});L=L.slice(-20);
+      try{localStorage.setItem(LOGK,JSON.stringify(L))}catch(e){}
+      if(GRUM.on())GRUM.call("/v1/sync",{method:"PUT",body:{items:[{k:"studyWith",v:L,updated:Date.now()}]}}).catch(function(){});
+    }
+    if(el)el.onclick=function(){$("#ask-open").click()};
+    return {talk:talk,react:react,done:done,persona:persona,ASK:ASK,kind:null};
+  })();
   $("#ask-open").onclick=function(){
     var c=curCard();if(!c){toast("지금 풀 카드가 없어요");return}
     $("#ask-ctx").textContent="문제: "+c.q+"\n정답: "+c.a.join(" / ");
-    $("#ask-out").hidden=true;$("#ask-out").textContent="";$("#ask-in").value="";
+    $("#ask-pout").hidden=true;$("#ask-pout").textContent="";$("#ask-in").value="";
     $("#ask-pop").hidden=false;$("#ask-in").focus();
   };
   $("#ask-x").onclick=function(){$("#ask-pop").hidden=true};
+  Array.prototype.forEach.call(document.querySelectorAll("#ask-pop [data-g]"),function(b){b.onclick=function(){GB.kind=b.getAttribute("data-g");$("#ask-go").click()}});
   $("#ask-go").onclick=async function(){
-    var c=curCard(),qv=$("#ask-in").value.trim(),out=$("#ask-out"),go=$("#ask-go");
+    var c=curCard(),qv=$("#ask-in").value.trim(),out=$("#ask-pout"),go=$("#ask-go"),kind=GB.kind;GB.kind=null;
     if(!c)return;
-    if(!qv){toast("궁금한 점을 적어 주세요");return}
+    if(!qv&&!kind){toast("궁금한 점을 적어 주세요");return}
+    if(kind==="check"&&!qv){toast("아래 칸에 내 답을 적고 다시 눌러 주세요");return}
     var online=navigator.onLine!==false;
     var o={only:online?null:"tiny"};
     if(!online&&AIX.list().indexOf("tiny")<0){
       out.hidden=false;out.textContent="지금 인터넷이 연결되어 있지 않아요. 설정 → AI · 동기화에서 '이 기기 작은 AI'를 받아 두면 오프라인에서도 물어볼 수 있어요.";return;
     }
-    var prompt="너는 한국 국가기술자격 실기 시험을 가르치는 강사다. 아래 문제와 정답을 참고해서 학습자의 질문에 짧고 정확하게 한국어로 답해라. 자료에 없는 법령 수치는 지어내지 마라.\n\n문제: "+c.q+"\n정답: "+c.a.join(" / ")+(c.exp?"\n풀이: "+c.exp:"")+"\n\n질문: "+qv;
+    var prompt=GB.persona()+"\n\n문제: "+c.q+"\n정답: "+c.a.join(" / ")+(c.exp?"\n풀이: "+c.exp:"")+(kind?"\n\n요청: "+GB.ASK[kind]:"")+(qv?"\n\n"+(kind==="check"?"내 답: ":"주인 질문: ")+qv:"");
     out.hidden=false;out.textContent="생각하는 중…";go.disabled=true;
     try{
       var r=await AIX(prompt,o);
